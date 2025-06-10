@@ -33,7 +33,7 @@ if (file_exists(__DIR__.'/../vendor/autoload.php')) {
  */
 Container::setInstance(new Container);
 
-$version = '4.6.1';
+$version = '4.6.2';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -393,7 +393,7 @@ if (is_dir(VALET_HOME_PATH)) {
                 } catch (\Throwable $e) {
                     warning($e->getMessage());
                 }
-            break;
+                break;
             default:
                 info('Please set your share tool with `valet share-tool expose` or `valet share-tool ngrok`.');
 
