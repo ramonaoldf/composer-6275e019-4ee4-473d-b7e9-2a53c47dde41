@@ -9,13 +9,13 @@ class Expose
 {
     public function __construct(public Composer $composer, public CommandLine $cli) {}
 
-    public function currentTunnelUrl(?string $domain = null): ?string
+    public function currentTunnelUrl(string $domain): ?string
     {
         $endpoint = 'http://127.0.0.1:4040/api/tunnels';
 
         try {
             $response = retry(20, function () use ($endpoint, $domain) {
-                $body = json_decode((new Client())->get($endpoint)->getBody());
+                $body = json_decode((new Client)->get($endpoint)->getBody());
 
                 if (isset($body->tunnels) && count($body->tunnels) > 0) {
                     if ($tunnelUrl = $this->findHttpTunnelUrl($body->tunnels, $domain)) {
