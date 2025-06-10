@@ -18,7 +18,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$version = '2.0.5';
+$version = '2.0.6';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -40,7 +40,7 @@ $app->command('install', function () {
     Configuration::install();
     Nginx::install();
     PhpFpm::install();
-    DnsMasq::install();
+    DnsMasq::install(Configuration::read()['domain']);
     Nginx::restart();
     Valet::symlinkToUsersBin();
 

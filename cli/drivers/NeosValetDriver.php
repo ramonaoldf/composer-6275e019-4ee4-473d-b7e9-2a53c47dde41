@@ -1,6 +1,6 @@
 <?php
 
-class LaravelValetDriver extends ValetDriver
+class NeosValetDriver extends ValetDriver
 {
     /**
      * Determine if the driver serves the request.
@@ -12,8 +12,7 @@ class LaravelValetDriver extends ValetDriver
      */
     public function serves($sitePath, $siteName, $uri)
     {
-        return file_exists($sitePath.'/public/index.php') &&
-               file_exists($sitePath.'/artisan');
+        return file_exists($sitePath.'/flow') && is_dir($sitePath.'/Web');
     }
 
     /**
@@ -26,21 +25,9 @@ class LaravelValetDriver extends ValetDriver
      */
     public function isStaticFile($sitePath, $siteName, $uri)
     {
-        if (file_exists($staticFilePath = $sitePath.'/public'.$uri)
-           && is_file($staticFilePath)) {
+        if ($this->isActualFile($staticFilePath = $sitePath.'/Web'.$uri)) {
             return $staticFilePath;
         }
-
-        $storageUri = $uri;
-
-        if (strpos($uri, '/storage/') === 0) {
-            $storageUri = substr($uri, 8);
-        }
-
-        if ($this->isActualFile($storagePath = $sitePath.'/storage/app/public'.$storageUri)) {
-            return $storagePath;
-        }
-
         return false;
     }
 
@@ -54,11 +41,10 @@ class LaravelValetDriver extends ValetDriver
      */
     public function frontControllerPath($sitePath, $siteName, $uri)
     {
-        // Shortcut for getting the "local" hostname as the HTTP_HOST
-        if (isset($_SERVER['HTTP_X_ORIGINAL_HOST'], $_SERVER['HTTP_X_FORWARDED_HOST'])) {
-            $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_FORWARDED_HOST'];
-        }
-        
-        return $sitePath.'/public/index.php';
+        putenv('FLOW_CONTEXT=Development');
+        putenv('FLOW_REWRITEURLS=1');
+        $_SERVER['SCRIPT_FILENAME'] = $sitePath.'/Web/index.php';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+        return $sitePath.'/Web/index.php';
     }
 }
