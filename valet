@@ -10,11 +10,12 @@ if (file_exists(__DIR__.'/vendor/autoload.php')) {
 should_be_compatible();
 
 use Silly\Application;
+use Symfony\Component\Process\Process;
 
 /**
  * Create the application.
  */
-$app = new Application('Laravel Valet', 'v0.1.5');
+$app = new Application('Laravel Valet', 'v0.1.6');
 
 /**
  * Allow Valet to be run more conveniently by allowing the Node proxy to run password-less sudo.
@@ -35,13 +36,34 @@ $app->command('install', function ($output) {
  * Add the current working directory to the paths configuration.
  */
 $app->command('serve', function ($output) {
-    should_be_sudo();
-
     Valet\Configuration::addPath(getcwd());
 
-    Valet\LaunchDaemon::restart();
-
     $output->writeln('<info>This directory has been added to your serve paths!</info>');
+});
+
+/**
+ * Add the current working directory to the paths configuration.
+ */
+$app->command('link name', function ($name, $output) {
+    $linkPath = Valet\Site::link($name);
+
+    $output->writeln('<info>A ['.$name.'] symbolic link has been created in ['.$linkPath.'].</info>');
+});
+
+/**
+ * Display all of the registered symbolic links.
+ */
+$app->command('links', function () {
+    passthru('ls -la '.$_SERVER['HOME'].'/.valet/Sites');
+});
+
+/**
+ * Unlink a link from the Valet links directory.
+ */
+$app->command('unlink name', function ($name, $output) {
+    Valet\Site::unlink($name);
+
+    $output->writeln('<info>The ['.$name.'] symbolic link has been removed.</info>');
 });
 
 /**
@@ -65,6 +87,38 @@ $app->command('logs', function ($output) {
     } else {
         $output->writeln('No log files were found.');
     }
+});
+
+/**
+ * Display all of the registered paths.
+ */
+$app->command('paths', function ($output) {
+    $paths = Valet\Configuration::read()['paths'];
+
+    if (count($paths) > 0) {
+        $output->writeln(json_encode($paths, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    } else {
+        $output->writeln('No paths have been registered.');
+    }
+});
+
+/**
+ * Prune any non-existent paths.
+ */
+$app->command('prune', function ($output) {
+    $config = Valet\Configuration::read();
+
+    foreach ($config['paths'] as $key => $path) {
+        if (! is_dir($path)) {
+            unset($config['paths'][$key]);
+
+            $output->writeln('<comment>Pruning:</comment> '.$path);
+        }
+    }
+
+    $config['paths'] = array_values($config['paths']);
+
+    Valet\Configuration::write($config);
 });
 
 /**
