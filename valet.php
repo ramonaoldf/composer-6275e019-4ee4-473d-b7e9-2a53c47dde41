@@ -14,7 +14,13 @@ use Silly\Application;
 /**
  * Create the application.
  */
-$app = new Application('Laravel Valet', 'v1.0.0');
+$app = new Application('Laravel Valet', 'v1.0.1');
+
+/**
+ * Prune missing directories and symbolic links on every command.
+ */
+Valet\Configuration::prune();
+Valet\Site::pruneLinks();
 
 /**
  * Allow Valet to be run more conveniently by allowing the Node proxy to run password-less sudo.
@@ -106,15 +112,6 @@ $app->command('paths', function ($output) {
     } else {
         $output->writeln('No paths have been registered.');
     }
-});
-
-/**
- * Prune any non-existent paths.
- */
-$app->command('prune', function ($output) {
-    Valet\Configuration::prune();
-
-    $output->writeln('<info>All missing paths have been pruned.</info>');
 });
 
 /**
