@@ -125,14 +125,21 @@ class Site
 
         $certs = $this->getCertificates($certsPath);
 
+        $links = $this->getSites($this->sitesPath(), $certs);
+
         $config = $this->config->read();
         $parkedLinks = collect();
-        foreach ($config['paths'] as $path) {
+        foreach (array_reverse($config['paths']) as $path) {
             if ($path === $this->sitesPath()) {
                 continue;
             }
 
-            $parkedLinks = $parkedLinks->merge($this->getSites($path, $certs));
+            // Only merge on the parked sites that don't interfere with the linked sites
+            $sites = $this->getSites($path, $certs)->filter(function ($site, $key) use ($links) {
+                return !$links->has($key);
+            });
+
+            $parkedLinks = $parkedLinks->merge($sites);
         }
 
         return $parkedLinks;
@@ -358,7 +365,7 @@ class Site
         $this->createPrivateKey($keyPath);
         $this->createSigningRequest($url, $keyPath, $csrPath, $confPath);
 
-        $caSrlParam = '-CAserial ' . $caSrlPath;
+        $caSrlParam = '-CAserial "' . $caSrlPath . '"';
         if (! $this->files->exists($caSrlPath)) {
             $caSrlParam .= ' -CAcreateserial';
         }
@@ -413,7 +420,7 @@ class Site
     function trustCa($caPemPath)
     {
         $this->cli->run(sprintf(
-            'sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain %s', $caPemPath
+            'sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "%s"', $caPemPath
         ));
     }
 
@@ -426,7 +433,7 @@ class Site
     function trustCertificate($crtPath)
     {
         $this->cli->run(sprintf(
-            'sudo security add-trusted-cert -d -r trustAsRoot -k /Library/Keychains/System.keychain %s', $crtPath
+            'sudo security add-trusted-cert -d -r trustAsRoot -k /Library/Keychains/System.keychain "%s"', $crtPath
         ));
     }
 
@@ -482,6 +489,37 @@ class Site
             'sudo security find-certificate -e "%s%s" -a -Z | grep SHA-1 | sudo awk \'{system("security delete-certificate -Z \'$NF\' /Library/Keychains/System.keychain")}\'',
             $url, '@laravel.valet'
         ));
+    }
+
+    function unsecureAll()
+    {
+        $tld = $this->config->read()['tld'];
+
+        $secured = $this->parked()
+            ->merge($this->links())
+            ->sort()
+            ->where('secured', ' X');
+
+        if ($secured->count() === 0) {
+            return info('No sites to unsecure. You may list all servable sites or links by running <comment>valet parked</comment> or <comment>valet links</comment>.');
+        }
+
+        info('Attempting to unsecure the following sites:');
+        table(['Site', 'SSL', 'URL', 'Path'], $secured->toArray());
+
+        foreach ($secured->pluck('site') as $url) {
+            $this->unsecure($url . '.' . $tld);
+        }
+
+        $remaining = $this->parked()
+            ->merge($this->links())
+            ->sort()
+            ->where('secured', ' X');
+        if ($remaining->count() > 0) {
+            warning('We were not succesful in unsecuring the following sites:');
+            table(['Site', 'SSL', 'URL', 'Path'], $remaining->toArray());
+        }
+        info('unsecure --all was successful.');
     }
 
     /**
