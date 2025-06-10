@@ -29,7 +29,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.1.1';
+$version = '2.1.3';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -63,13 +63,16 @@ $app->command('install', function () {
  */
 if (is_dir(VALET_HOME_PATH)) {
     /**
+     * Upgrade helper: ensure the tld config exists
+     */
+    if (empty(Configuration::read()['tld'])) {
+        Configuration::writeBaseConfiguration();
+    }
+
+    /**
      * Get or set the TLD currently being used by Valet.
      */
     $app->command('tld [tld]', function ($tld = null) {
-        if (empty(Configuration::read()['tld'])) {
-            Configuration::writeBaseConfiguration();
-        }
-
         if ($tld === null) {
             return info(Configuration::read()['tld']);
         }
