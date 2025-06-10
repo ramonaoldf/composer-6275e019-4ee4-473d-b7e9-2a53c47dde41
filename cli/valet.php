@@ -18,7 +18,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$version = '2.0.3';
+$version = '2.0.4';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -43,8 +43,6 @@ $app->command('install', function () {
     DnsMasq::install();
     Nginx::restart();
     Valet::symlinkToUsersBin();
-    Brew::createSudoersEntry();
-    Valet::createSudoersEntry();
 
     output(PHP_EOL.'<info>Valet installed successfully!</info>');
 })->descriptions('Install the Valet services');
@@ -101,7 +99,9 @@ $app->command('link [name]', function ($name) {
  * Display all of the registered symbolic links.
  */
 $app->command('links', function () {
-    passthru('ls -la '.VALET_HOME_PATH.'/Sites');
+    $links = Site::links();
+
+    table(['Site', 'SSL', 'URL', 'Path'], $links->all());
 })->descriptions('Display all of the registered Valet links');
 
 /**
@@ -172,13 +172,13 @@ $app->command('paths', function () {
 })->descriptions('Get all of the paths registered with Valet');
 
 /**
- * Open the current directory in the browser.
+ * Open the current or given directory in the browser.
  */
- $app->command('open', function () {
-     $url = "http://".Site::host(getcwd()).'.'.Configuration::read()['domain'].'/';
+ $app->command('open [domain]', function ($domain = null) {
+     $url = "http://".($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
 
      passthru("open ".escapeshellarg($url));
- })->descriptions('Open the site for the current directory in your browser');
+ })->descriptions('Open the site for the current (or specified) directory in your browser');
 
 /**
  * Generate a publicly accessible URL for your project.

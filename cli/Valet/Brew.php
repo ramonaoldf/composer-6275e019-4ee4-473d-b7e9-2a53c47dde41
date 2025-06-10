@@ -42,8 +42,28 @@ class Brew
     {
         return $this->installed('php71')
             || $this->installed('php70')
-            || $this->installed('php56')
-            || $this->installed('php55');
+            || $this->installed('php56');
+    }
+
+    /**
+     * Determine if a compatible nginx version is Homebrewed.
+     *
+     * @return bool
+     */
+    function hasInstalledNginx()
+    {
+        return $this->installed('nginx')
+            || $this->installed('nginx-full');
+    }
+
+    /**
+     * Return name of the nginx service installed via Homebrewed.
+     *
+     * @return string
+     */
+    function nginxServiceName()
+    {
+        return $this->installed('nginx-full') ? 'nginx-full' : 'nginx';
     }
 
     /**
@@ -109,7 +129,8 @@ class Brew
         $services = is_array($services) ? $services : func_get_args();
 
         foreach ($services as $service) {
-            $this->cli->quietly('sudo brew services restart '.$service);
+            $this->cli->quietly('sudo brew services stop '.$service);
+            $this->cli->quietly('sudo brew services start '.$service);
         }
     }
 
@@ -146,8 +167,6 @@ class Brew
             return 'php70';
         } elseif (strpos($resolvedPath, 'php56') !== false) {
             return 'php56';
-        } elseif (strpos($resolvedPath, 'php55') !== false) {
-            return 'php55';
         } else {
             throw new DomainException("Unable to determine linked PHP.");
         }
@@ -161,18 +180,5 @@ class Brew
     function restartLinkedPhp()
     {
         $this->restartService($this->linkedPhp());
-    }
-
-    /**
-     * Create the "sudoers.d" entry for running Brew.
-     *
-     * @return void
-     */
-    function createSudoersEntry()
-    {
-        $this->files->ensureDirExists('/etc/sudoers.d');
-
-        $this->files->put('/etc/sudoers.d/brew', 'Cmnd_Alias BREW = /usr/local/bin/brew *
-%admin ALL=(root) NOPASSWD: BREW'.PHP_EOL);
     }
 }
