@@ -31,7 +31,7 @@ class Site
     function host($path)
     {
         foreach ($this->files->scandir($this->sitesPath()) as $link) {
-            if ($resolved = realpath($this->sitesPath().'/'.$link) == $path) {
+            if ($resolved = realpath($this->sitesPath().'/'.$link) === $path) {
                 return $link;
             }
         }
@@ -93,6 +93,10 @@ class Site
      */
     function resecureForNewDomain($oldDomain, $domain)
     {
+        if (!$this->files->exists($this->certificatesPath())) {
+            return;
+        }
+
         $secured = $this->secured();
 
         foreach ($secured as $url) {
