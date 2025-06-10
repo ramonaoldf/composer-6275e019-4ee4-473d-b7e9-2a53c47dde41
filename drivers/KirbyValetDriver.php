@@ -1,6 +1,6 @@
 <?php
 
-class LaravelValetDriver extends ValetDriver
+class KirbyValetDriver extends ValetDriver
 {
     /**
      * Determine if the driver serves the request.
@@ -8,12 +8,11 @@ class LaravelValetDriver extends ValetDriver
      * @param  string  $sitePath
      * @param  string  $siteName
      * @param  string  $uri
-     * @return bool
+     * @return void
      */
     public function serves($sitePath, $siteName, $uri)
     {
-        return file_exists($sitePath.'/public/index.php') &&
-               file_exists($sitePath.'/artisan');
+        return is_dir($sitePath.'/kirby');
     }
 
     /**
@@ -26,22 +25,11 @@ class LaravelValetDriver extends ValetDriver
      */
     public function isStaticFile($sitePath, $siteName, $uri)
     {
-        if (file_exists($staticFilePath = $sitePath.'/public'.$uri)) {
-            return $staticFilePath;
-        }
+       if (file_exists($sitePath.$uri) && ! is_dir($sitePath.$uri)) {
+           return $sitePath.$uri;
+       }
 
-        $storageUri = $uri;
-
-        if (strpos($uri, '/storage/') === 0) {
-            $storageUri = substr($uri, 8);
-        }
-
-        if (file_exists($storagePath = $sitePath.'/storage/app/public'.$storageUri) &&
-            ! is_dir($storagePath)) {
-            return $storagePath;
-        }
-
-        return false;
+       return false;
     }
 
     /**
@@ -54,6 +42,19 @@ class LaravelValetDriver extends ValetDriver
      */
     public function frontControllerPath($sitePath, $siteName, $uri)
     {
-        return $sitePath.'/public/index.php';
+        // Needed to force Kirby to use *.dev to generate its URLs...
+        $_SERVER['SERVER_NAME'] = $_SERVER['HTTP_HOST'];
+
+        if (preg_match('/^\/panel/', $uri)) {
+            $_SERVER['SCRIPT_NAME'] = '/panel/index.php';
+
+            return $sitePath.'/panel/index.php';
+        }
+
+        if (file_exists($indexPath = $sitePath.'/index.php')) {
+            $_SERVER['SCRIPT_NAME'] = '/index.php';
+
+            return $indexPath;
+        }
     }
 }
