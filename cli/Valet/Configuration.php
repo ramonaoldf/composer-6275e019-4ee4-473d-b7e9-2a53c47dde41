@@ -18,7 +18,7 @@ class Configuration
         $this->createSitesDirectory();
         $this->createLogDirectory();
         $this->createCertificatesDirectory();
-        $this->writeBaseConfiguration();
+        $this->ensureBaseConfiguration();
 
         $this->files->chown($this->path(), user());
     }
@@ -84,7 +84,23 @@ class Configuration
     }
 
     /**
-     * Write the base, initial configuration for Valet.
+     * Ensure the base initial configuration has been installed.
+     */
+    public function ensureBaseConfiguration(): void
+    {
+        $this->writeBaseConfiguration();
+
+        if (empty($this->read()['tld'])) {
+            $this->updateKey('tld', 'test');
+        }
+
+        if (empty($this->read()['loopback'])) {
+            $this->updateKey('loopback', '127.0.0.1');
+        }
+    }
+
+    /**
+     * Write the base initial configuration for Valet.
      */
     public function writeBaseConfiguration(): void
     {
