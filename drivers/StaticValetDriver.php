@@ -1,6 +1,6 @@
 <?php
 
-class StatamicValetDriver extends ValetDriver
+class StaticValetDriver extends ValetDriver
 {
     /**
      * Determine if the driver serves the request.
@@ -12,7 +12,7 @@ class StatamicValetDriver extends ValetDriver
      */
     public function serves($sitePath, $siteName, $uri)
     {
-        return is_dir($sitePath.'/statamic');
+        return $this->isStaticFile($sitePath, $siteName, $uri) !== false;
     }
 
     /**
@@ -25,13 +25,11 @@ class StatamicValetDriver extends ValetDriver
      */
     public function isStaticFile($sitePath, $siteName, $uri)
     {
-        if (strpos($uri, '/site') === 0 && strpos($uri, '/site/themes') !== 0) {
-            return false;
-        } elseif (strpos($uri, '/local') === 0 || strpos($uri, '/statamic') === 0) {
-            return false;
-        } elseif (file_exists($staticFilePath = $sitePath.$uri)) {
+        $uri = rtrim($uri, '/');
+
+        if (file_exists($staticFilePath = $sitePath.$uri) && ! is_dir($staticFilePath)) {
             return $staticFilePath;
-        } elseif (file_exists($staticFilePath = $sitePath.'/public'.$uri)) {
+        } elseif (file_exists($staticFilePath = $sitePath.$uri.'/index.html')) {
             return $staticFilePath;
         }
 
@@ -48,18 +46,6 @@ class StatamicValetDriver extends ValetDriver
      */
     public function frontControllerPath($sitePath, $siteName, $uri)
     {
-        if (isset($_SERVER['HTTP_X_ORIGINAL_HOST'])) {
-            $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_ORIGINAL_HOST'];
-        }
-
-        $_SERVER['SCRIPT_NAME'] = '/index.php';
-
-        if (file_exists($indexPath = $sitePath.'/index.php')) {
-            return $indexPath;
-        }
-
-        if (file_exists($indexPath = $sitePath.'/public/index.php')) {
-            return $indexPath;
-        }
+        return $sitePath.'/index.html';
     }
 }

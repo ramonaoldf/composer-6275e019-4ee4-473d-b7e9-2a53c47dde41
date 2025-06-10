@@ -44,13 +44,15 @@ abstract class ValetDriver
     {
         $drivers = static::driversIn(VALET_HOME_PATH.'/Drivers');
 
-        $drivers[] = 'StatamicValetDriver';
         $drivers[] = 'LaravelValetDriver';
+        $drivers[] = 'StatamicValetDriver';
+        $drivers[] = 'JigsawValetDriver';
+        $drivers[] = 'StaticValetDriver';
 
         foreach ($drivers as $driver) {
             $driver = new $driver;
 
-            if ($driver->serves($sitePath, $siteName, $uri)) {
+            if ($driver->serves($sitePath, $siteName, $driver->mutateUri($uri))) {
                 return $driver;
             }
         }
@@ -82,6 +84,17 @@ abstract class ValetDriver
     }
 
     /**
+     * Mutate the incoming URI.
+     *
+     * @param  string  $uri
+     * @return string
+     */
+    public function mutateUri($uri)
+    {
+        return $uri;
+    }
+
+    /**
      * Serve the static file at the given path.
      *
      * @param  string  $staticFilePath
@@ -94,7 +107,7 @@ abstract class ValetDriver
     {
         $mimes = require(__DIR__.'/../mimes.php');
 
-        header('Content-Type: '.$mimes[pathinfo($uri)['extension']]);
+        header('Content-Type: '.$mimes[pathinfo($staticFilePath)['extension']]);
 
         readfile($staticFilePath);
     }
