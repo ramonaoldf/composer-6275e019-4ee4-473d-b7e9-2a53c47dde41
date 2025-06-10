@@ -2,7 +2,6 @@
 
 namespace Valet;
 
-use Exception;
 use DomainException;
 
 class Brew
@@ -185,13 +184,23 @@ class Brew
     }
 
     /**
-     * Determine which version of PHP is linked in Homebrew.
+     * Determine if php is currently linked
      *
-     * @return string
+     * @return bool
      */
-    function linkedPhp()
+    function hasLinkedPhp()
     {
-        if (! $this->files->isLink('/usr/local/bin/php')) {
+        return $this->files->isLink('/usr/local/bin/php');
+    }
+
+    /**
+     * Get the linked php parsed
+     *
+     * @return mixed
+     */
+    function getParsedLinkedPhp()
+    {
+        if (! $this->hasLinkedPhp()) {
             throw new DomainException("Homebrew PHP appears not to be linked.");
         }
 
@@ -205,6 +214,32 @@ class Brew
          * "../Cellar/php55/bin/php
          */
         preg_match('~\w{3,}/(php)(@?\d\.?\d)?/(\d\.\d)?([_\d\.]*)?/?\w{3,}~', $resolvedPath, $matches);
+
+        return $matches;
+    }
+
+    /**
+     * Gets the currently linked formula
+     * E.g if under php, will be php, if under php@7.3 will be that
+     * Different to ->linkedPhp() in that this will just get the linked directory name (whether that is php, php55 or
+     * php@7.2)
+     *
+     * @return mixed
+     */
+    function getLinkedPhpFormula()
+    {
+        $matches = $this->getParsedLinkedPhp();
+        return $matches[1] . $matches[2];
+    }
+
+    /**
+     * Determine which version of PHP is linked in Homebrew.
+     *
+     * @return string
+     */
+    function linkedPhp()
+    {
+        $matches = $this->getParsedLinkedPhp();
         $resolvedPhpVersion = $matches[3] ?: $matches[2];
 
         return $this->supportedPhpVersions()->first(   
@@ -224,7 +259,7 @@ class Brew
      */
     function restartLinkedPhp()
     {
-        $this->restartService($this->linkedPhp());
+        $this->restartService($this->getLinkedPhpFormula());
     }
 
     /**
@@ -238,5 +273,60 @@ class Brew
 
         $this->files->put('/etc/sudoers.d/brew', 'Cmnd_Alias BREW = /usr/local/bin/brew *
 %admin ALL=(root) NOPASSWD: BREW'.PHP_EOL);
+    }
+
+    /**
+     * Link passed formula
+     *
+     * @param $formula
+     * @param bool $force
+     *
+     * @return string
+     */
+    function link($formula, $force = false)
+    {
+        return $this->cli->runAsUser(
+            sprintf('brew link %s%s', $formula, $force ? ' --force': ''),
+            function ($exitCode, $errorOutput) use ($formula) {
+                output($errorOutput);
+
+                throw new DomainException('Brew was unable to link [' . $formula . '].');
+            }
+        );
+    }
+
+    /**
+     * Unlink passed formula
+     * @param $formula
+     *
+     * @return string
+     */
+    function unlink($formula)
+    {
+        return $this->cli->runAsUser(
+            sprintf('brew unlink %s', $formula),
+            function ($exitCode, $errorOutput) use ($formula) {
+                output($errorOutput);
+
+                throw new DomainException('Brew was unable to unlink [' . $formula . '].');
+            }
+        );
+    }
+
+    /**
+     * Get the currently running brew services
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    function getRunningServices()
+    {
+        return collect(array_filter(explode(PHP_EOL, $this->cli->runAsUser(
+            'brew services list | grep started | awk \'{ print $1; }\'',
+            function ($exitCode, $errorOutput) {
+                output($errorOutput);
+
+                throw new DomainException('Brew was unable to check which services are running.');
+            }
+        ))));
     }
 }
