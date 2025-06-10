@@ -18,7 +18,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$version = '1.1.22';
+$version = '2.0.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -35,13 +35,13 @@ if (is_dir(VALET_HOME_PATH)) {
  * Allow Valet to be run more conveniently by allowing the Node proxy to run password-less sudo.
  */
 $app->command('install', function () {
-    Caddy::stop();
+    Nginx::stop();
 
     Configuration::install();
-    Caddy::install();
+    Nginx::install();
     PhpFpm::install();
     DnsMasq::install();
-    Caddy::restart();
+    Nginx::restart();
     Valet::symlinkToUsersBin();
     Brew::createSudoersEntry();
     Valet::createSudoersEntry();
@@ -65,7 +65,7 @@ $app->command('domain [domain]', function ($domain = null) {
 
     Site::resecureForNewDomain($oldDomain, $domain);
     PhpFpm::restart();
-    Caddy::restart();
+    Nginx::restart();
 
     info('Your Valet domain has been updated to ['.$domain.'].');
 })->descriptions('Get or set the domain used for Valet sites');
@@ -74,12 +74,7 @@ $app->command('domain [domain]', function ($domain = null) {
  * Add the current working directory to the paths configuration.
  */
 $app->command('park [path]', function ($path = null) {
-    $pathToPark = getcwd();
-    if ($path !== null) {
-        $pathToPark = $path;
-    }
-
-    Configuration::addPath($pathToPark);
+    Configuration::addPath($path ?: getcwd());
 
     info(($path === null ? "This" : "The [{$path}]") . " directory has been added to Valet's paths.");
 })->descriptions('Register the current working (or specified) directory with Valet');
@@ -88,12 +83,7 @@ $app->command('park [path]', function ($path = null) {
  * Remove the current working directory from the paths configuration.
  */
 $app->command('forget [path]', function ($path = null) {
-    $pathToForget = getcwd();
-    if ($path !== null) {
-        $pathToForget = $path;
-    }
-
-    Configuration::removePath($pathToForget);
+    Configuration::removePath($path ?: getcwd());
 
     info(($path === null ? "This" : "The [{$path}]") . " directory has been removed from Valet's paths.");
 })->descriptions('Remove the current working (or specified) directory from Valet\'s list of paths');
@@ -133,7 +123,7 @@ $app->command('secure [domain]', function ($domain = null) {
 
     PhpFpm::restart();
 
-    Caddy::restart();
+    Nginx::restart();
 
     info('The ['.$url.'] site has been secured with a fresh TLS certificate.');
 })->descriptions('Secure the given domain with a trusted TLS certificate');
@@ -148,7 +138,7 @@ $app->command('unsecure [domain]', function ($domain = null) {
 
     PhpFpm::restart();
 
-    Caddy::restart();
+    Nginx::restart();
 
     info('The ['.$url.'] site will now serve traffic over HTTP.');
 })->descriptions('Stop serving the given domain over HTTPS and remove the trusted TLS certificate');
@@ -167,40 +157,6 @@ $app->command('which', function () {
         warning('Valet could not determine which driver to use for this site.');
     }
 })->descriptions('Determine which Valet driver serves the current working directory');
-
-/**
- * Stream all of the logs for all sites.
- */
-$app->command('logs', function () {
-    $files = Site::logs(Configuration::read()['paths']);
-
-    $args = collect($files)->map(function ($file) {
-        return escapeshellarg($file);
-    })->implode(' ');
-
-    if (count($files) > 0) {
-        passthru("tail -f {$args}");
-    } else {
-        warning('No log files were found.');
-    }
-})->descriptions('Stream all of the logs for all Laravel sites registered with Valet');
-
-/**
- * Stream Caddy access- and error-log.
- */
-$app->command('server-log', function () {
-    $files = Filesystem::scandir(VALET_HOME_PATH.'/Log');
-
-    $args = collect($files)->map(function ($file) {
-        return escapeshellarg(VALET_HOME_PATH.'/Log/'.$file);
-    })->implode(' ');
-
-    if (count($files) > 0) {
-        passthru("tail -f {$args}");
-    } else {
-        warning('No log files were found.');
-    }
-})->descriptions('Stream Caddy access- and error-log.');
 
 /**
  * Display all of the registered paths.
@@ -225,6 +181,13 @@ $app->command('paths', function () {
  })->descriptions('Open the site for the current directory in your browser');
 
 /**
+ * Generate a publicly accessible URL for your project.
+ */
+$app->command('share', function () {
+    warning("It looks like you are running `cli/valet.php` directly, please use the `valet` script in the project root instead.");
+})->descriptions('Generate a publicly accessible URL for your project');
+
+/**
  * Echo the currently tunneled URL.
  */
 $app->command('fetch-share-url', function () {
@@ -237,7 +200,7 @@ $app->command('fetch-share-url', function () {
 $app->command('start', function () {
     PhpFpm::restart();
 
-    Caddy::restart();
+    Nginx::restart();
 
     info('Valet services have been started.');
 })->descriptions('Start the Valet services');
@@ -248,7 +211,7 @@ $app->command('start', function () {
 $app->command('restart', function () {
     PhpFpm::restart();
 
-    Caddy::restart();
+    Nginx::restart();
 
     info('Valet services have been restarted.');
 })->descriptions('Restart the Valet services');
@@ -259,7 +222,7 @@ $app->command('restart', function () {
 $app->command('stop', function () {
     PhpFpm::stop();
 
-    Caddy::stop();
+    Nginx::stop();
 
     info('Valet services have been stopped.');
 })->descriptions('Stop the Valet services');
@@ -268,7 +231,7 @@ $app->command('stop', function () {
  * Uninstall Valet entirely.
  */
 $app->command('uninstall', function () {
-    Caddy::uninstall();
+    Nginx::uninstall();
 
     info('Valet has been uninstalled.');
 })->descriptions('Uninstall the Valet services');
