@@ -32,7 +32,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.9.1';
+$version = '2.10.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -180,6 +180,35 @@ if (is_dir(VALET_HOME_PATH)) {
 
         info('The ['.$url.'] site will now serve traffic over HTTP.');
     })->descriptions('Stop serving the given domain over HTTPS and remove the trusted TLS certificate');
+
+    /**
+     * Create an Nginx proxy config for the specified domain
+     */
+    $app->command('proxy domain host', function ($domain, $host) {
+
+        Site::proxyCreate($domain, $host);
+        Nginx::restart();
+
+    })->descriptions('Create an Nginx proxy site for the specified host. Useful for docker, mailhog etc.');
+
+    /**
+     * Delete an Nginx proxy config
+     */
+    $app->command('unproxy domain', function ($domain) {
+
+        Site::proxyDelete($domain);
+        Nginx::restart();
+
+    })->descriptions('Delete an Nginx proxy config.');
+
+    /**
+     * Display all of the sites that are proxies.
+     */
+    $app->command('proxies', function () {
+        $proxies = Site::proxies();
+
+        table(['Site', 'SSL', 'URL', 'Host'], $proxies->all());
+    })->descriptions('Display all of the proxy sites');
 
     /**
      * Determine which Valet driver the current directory is using.
@@ -532,6 +561,20 @@ You might also want to investigate your global Composer configs. Helpful command
         output('Directory listing is '.$current);
     })->descriptions('Determine directory-listing behavior. Default is off, which means a 404 will display.', [
         'status' => 'on or off. (default=off) will show a 404 page; [on] will display a listing if project folder exists but requested URI not found'
+    ]);
+
+    /**
+     * Output diagnostics to aid in debugging Valet.
+     */
+    $app->command('diagnose [-p|--print] [--plain]', function ($print, $plain) {
+        info('Running diagnostics... (this may take a while)');
+
+        Diagnose::run($print, $plain);
+
+        info('Diagnostics output has been copied to your clipboard.');
+    })->descriptions('Output diagnostics to aid in debugging Valet.', [
+        '--print' => 'print diagnostics output while running',
+        '--plain' => 'format clipboard output as plain text',
     ]);
 }
 
