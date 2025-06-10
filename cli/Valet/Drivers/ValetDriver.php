@@ -1,5 +1,12 @@
 <?php
 
+namespace Valet\Drivers;
+
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RecursiveRegexIterator;
+use RegexIterator;
+
 abstract class ValetDriver
 {
     /**
@@ -74,7 +81,13 @@ abstract class ValetDriver
         $drivers[] = 'BasicValetDriver';
 
         foreach ($drivers as $driver) {
-            $driver = new $driver;
+            try {
+                // Try for old, un-namespaced drivers
+                $driver = new $driver;
+            } catch (\Throwable $e) {
+                $className = "Valet\Drivers\\$driver";
+                $driver = new $className;
+            }
 
             if ($driver->serves($sitePath, $siteName, $driver->mutateUri($uri))) {
                 return $driver;

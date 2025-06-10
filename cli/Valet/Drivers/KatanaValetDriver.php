@@ -1,6 +1,8 @@
 <?php
 
-class JigsawValetDriver extends BasicValetDriver
+namespace Valet\Drivers;
+
+class KatanaValetDriver extends BasicValetDriver
 {
     /**
      * Mutate the incoming URI.
@@ -10,7 +12,7 @@ class JigsawValetDriver extends BasicValetDriver
      */
     public function mutateUri($uri)
     {
-        return rtrim('/build_local'.$uri, '/');
+        return rtrim('/public'.$uri, '/');
     }
 
     /**
@@ -23,6 +25,6 @@ class JigsawValetDriver extends BasicValetDriver
      */
     public function serves($sitePath, $siteName, $uri)
     {
-        return is_dir($sitePath.'/build_local');
+        return file_exists($sitePath.'/katana');
     }
 }
