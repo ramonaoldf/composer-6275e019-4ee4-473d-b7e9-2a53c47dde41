@@ -31,7 +31,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.4.2';
+$version = '2.5.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -100,6 +100,15 @@ if (is_dir(VALET_HOME_PATH)) {
 
         info(($path === null ? "This" : "The [{$path}]") . " directory has been added to Valet's paths.");
     })->descriptions('Register the current working (or specified) directory with Valet');
+
+    /**
+     * Get all the current sites within paths parked with 'park {path}'
+     */
+    $app->command('parked', function () {
+        $parked = Site::parked();
+
+        table(['Site', 'SSL', 'URL', 'Path'], $parked->all());
+    })->descriptions('Display all the current sites within parked paths');
 
     /**
      * Remove the current working directory from the paths configuration.
@@ -241,7 +250,7 @@ if (is_dir(VALET_HOME_PATH)) {
      * Stop the daemon services.
      */
     $app->command('stop', function () {
-        PhpFpm::stop();
+        PhpFpm::stopRunning();
 
         Nginx::stop();
 
