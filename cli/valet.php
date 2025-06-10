@@ -32,7 +32,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && ! is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.17.0';
+$version = '2.17.1';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -179,7 +179,7 @@ if (is_dir(VALET_HOME_PATH)) {
     /**
      * Secure the given domain with a trusted TLS certificate.
      */
-    $app->command('secure [domain] [--expireIn=]', function ($domain = null, $expireIn = null) {
+    $app->command('secure [domain] [--expireIn=]', function ($domain = null, $expireIn = 368) {
         $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['tld'];
 
         Site::secure($url, null, $expireIn);
