@@ -11,6 +11,31 @@ function quietly($command)
 }
 
 /**
+ * Retry the given function N times.
+ *
+ * @param  int  $retries
+ * @param  callable  $retries
+ * @param  int  $sleep
+ * @return mixed
+ */
+function retry($retries, $fn, $sleep = 0)
+{
+    beginning:
+    try {
+        return $fn();
+    } catch (Exception $e) {
+        if (!$retries) {
+            throw $e;
+        }
+        $retries--;
+        if ($sleep > 0) {
+            usleep($sleep * 1000);
+        }
+        goto beginning;
+    }
+}
+
+/**
  * Check the system's compatibility with Valet.
  *
  * @return bool
@@ -19,12 +44,6 @@ function should_be_compatible()
 {
     if (PHP_OS != 'Darwin') {
         echo 'Valet only supports the Mac operating system.'.PHP_EOL;
-
-        exit(1);
-    }
-
-    if (exec('which php') != '/usr/local/bin/php') {
-        echo "Valet requires PHP to be installed at [/usr/local/bin/php].";
 
         exit(1);
     }
