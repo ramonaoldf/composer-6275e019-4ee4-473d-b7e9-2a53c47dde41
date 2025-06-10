@@ -47,6 +47,7 @@ abstract class ValetDriver
         $drivers[] = 'LaravelValetDriver';
 
         $drivers[] = 'WordPressValetDriver';
+        $drivers[] = 'BedrockValetDriver';
         $drivers[] = 'SymfonyValetDriver';
         $drivers[] = 'CraftValetDriver';
         $drivers[] = 'StatamicValetDriver';
@@ -57,6 +58,7 @@ abstract class ValetDriver
         $drivers[] = 'KirbyValetDriver';
         $drivers[] = 'ContaoValetDriver';
         $drivers[] = 'KatanaValetDriver';
+        $drivers[] = 'JoomlaValetDriver';
 
         $drivers[] = 'BasicValetDriver';
 
