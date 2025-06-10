@@ -2,6 +2,7 @@
 
 namespace Valet;
 
+use DateTime;
 use DomainException;
 use Illuminate\Support\Collection;
 use PhpFpm;
@@ -188,7 +189,7 @@ class Site
     /**
      * Identify whether a site is for a proxy by reading the host name from its config file.
      */
-    public function getProxyHostForSite(string $site, string $configContents = null): ?string
+    public function getProxyHostForSite(string $site, ?string $configContents = null): ?string
     {
         $siteConf = $configContents ?: $this->getSiteConfigFileContents($site);
 
@@ -207,7 +208,7 @@ class Site
     /**
      * Get the contents of the configuration for the given site.
      */
-    public function getSiteConfigFileContents(string $site, string $suffix = null): ?string
+    public function getSiteConfigFileContents(string $site, ?string $suffix = null): ?string
     {
         $config = $this->config->read();
         $suffix = $suffix ?: '.'.$config['tld'];
@@ -219,7 +220,7 @@ class Site
     /**
      * Get all certificates from config folder.
      */
-    public function getCertificates(string $path = null): Collection
+    public function getCertificates(?string $path = null): Collection
     {
         $path = $path ?: $this->certificatesPath();
 
@@ -283,7 +284,7 @@ class Site
     /**
      * Unlink the given symbolic link.
      */
-    public function unlink(string $name = null): string
+    public function unlink(?string $name = null): string
     {
         $name = $this->getSiteLinkName($name);
 
@@ -435,6 +436,25 @@ class Site
             })->unique()->values()->all();
     }
 
+    /**
+     * Get all of the URLs with expiration dates that are currently secured.
+     */
+    public function securedWithDates(): array
+    {
+        return collect($this->secured())->map(function ($site) {
+            $filePath = $this->certificatesPath().'/'.$site.'.crt';
+
+            $expiration = $this->cli->run("openssl x509 -enddate -noout -in $filePath");
+
+            $expiration = str_replace('notAfter=', '', $expiration);
+
+            return [
+                'site' => $site,
+                'exp' => new DateTime($expiration),
+            ];
+        })->unique()->values()->all();
+    }
+
     public function isSecured(string $site): bool
     {
         $tld = $this->config->read()['tld'];
@@ -452,7 +472,7 @@ class Site
      *
      * @see https://github.com/cabforum/servercert/blob/main/docs/BR.md
      */
-    public function secure(string $url, string $siteConf = null, int $certificateExpireInDays = 396, int $caExpireInYears = 20): void
+    public function secure(string $url, ?string $siteConf = null, int $certificateExpireInDays = 396, int $caExpireInYears = 20): void
     {
         // Extract in order to later preserve custom PHP version config when securing
         $phpVersion = $this->customPhpVersion($url);
@@ -478,6 +498,20 @@ class Site
         }
 
         $this->files->putAsUser($this->nginxPath($url), $siteConf);
+    }
+
+    /**
+     * Renews all domains with a trusted TLS certificate.
+     */
+    public function renew($expireIn): void
+    {
+        collect($this->securedWithDates())->each(function ($row) use ($expireIn) {
+            $url = $this->domain($row['site']);
+
+            $this->secure($url, null, $expireIn);
+
+            info('The ['.$url.'] site has been secured with a fresh TLS certificate.');
+        });
     }
 
     /**
@@ -628,11 +662,14 @@ class Site
     /**
      * Build the TLS secured Nginx server for the given URL.
      */
-    public function buildSecureNginxServer(string $url, string $siteConf = null): string
+    public function buildSecureNginxServer(string $url, ?string $siteConf = null): string
     {
         if ($siteConf === null) {
+            $nginxVersion = str_replace('nginx version: nginx/', '', exec('nginx -v 2>&1'));
+            $configFile = version_compare($nginxVersion, '1.25.1', '>=') ? 'secure.valet.conf' : 'secure.valet-legacy.conf';
+
             $siteConf = $this->replaceOldLoopbackWithNew(
-                $this->files->getStub('secure.valet.conf'),
+                $this->files->getStub($configFile),
                 'VALET_LOOPBACK',
                 $this->valetLoopback()
             );
@@ -774,8 +811,11 @@ class Site
                 $proxyUrl .= '.'.$tld;
             }
 
+            $nginxVersion = str_replace('nginx version: nginx/', '', exec('nginx -v 2>&1'));
+            $configFile = version_compare($nginxVersion, '1.25.1', '>=') ? 'secure.proxy.valet.conf' : 'secure.proxy.valet-legacy.conf';
+
             $siteConf = $this->replaceOldLoopbackWithNew(
-                $this->files->getStub($secure ? 'secure.proxy.valet.conf' : 'proxy.valet.conf'),
+                $this->files->getStub($secure ? $configFile : 'proxy.valet.conf'),
                 'VALET_LOOPBACK',
                 $this->valetLoopback()
             );
@@ -943,7 +983,7 @@ class Site
     /**
      * Get the path to Nginx site configuration files.
      */
-    public function nginxPath(string $additionalPath = null): string
+    public function nginxPath(?string $additionalPath = null): string
     {
         return $this->valetHomePath().'/Nginx'.($additionalPath ? '/'.$additionalPath : '');
     }
@@ -951,7 +991,7 @@ class Site
     /**
      * Get the path to the linked Valet sites.
      */
-    public function sitesPath(string $link = null): string
+    public function sitesPath(?string $link = null): string
     {
         return $this->valetHomePath().'/Sites'.($link ? '/'.$link : '');
     }
@@ -959,7 +999,7 @@ class Site
     /**
      * Get the path to the Valet CA certificates.
      */
-    public function caPath(string $caFile = null): string
+    public function caPath(?string $caFile = null): string
     {
         return $this->valetHomePath().'/CA'.($caFile ? '/'.$caFile : '');
     }
@@ -967,7 +1007,7 @@ class Site
     /**
      * Get the path to the Valet TLS certificates.
      */
-    public function certificatesPath(string $url = null, string $extension = null): string
+    public function certificatesPath(?string $url = null, ?string $extension = null): string
     {
         $url = $url ? '/'.$url : '';
         $extension = $extension ? '.'.$extension : '';
@@ -1051,7 +1091,7 @@ class Site
     /**
      * Get configuration items defined in .valetrc for a site.
      */
-    public function valetRc(string $siteName, string $cwd = null): array
+    public function valetRc(string $siteName, ?string $cwd = null): array
     {
         if ($cwd) {
             $path = $cwd.'/.valetrc';
@@ -1077,7 +1117,7 @@ class Site
     /**
      * Get PHP version from .valetrc or .valetphprc for a site.
      */
-    public function phpRcVersion(string $siteName, string $cwd = null): ?string
+    public function phpRcVersion(string $siteName, ?string $cwd = null): ?string
     {
         if ($cwd) {
             $oldPath = $cwd.'/.valetphprc';
