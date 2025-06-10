@@ -1,5 +1,7 @@
 <?php
 
+namespace Valet\Drivers;
+
 class NeosValetDriver extends ValetDriver
 {
     /**
