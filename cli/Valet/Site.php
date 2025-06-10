@@ -109,7 +109,33 @@ class Site
 
         $certs = $this->getCertificates($certsPath);
 
-        return $this->getLinks($this->sitesPath(), $certs);
+        return $this->getSites($this->sitesPath(), $certs);
+    }
+
+    /**
+     * Pretty print out all parked links in Valet
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    function parked()
+    {
+        $certsPath = VALET_HOME_PATH.'/Certificates';
+
+        $this->files->ensureDirExists($certsPath, user());
+
+        $certs = $this->getCertificates($certsPath);
+
+        $config = $this->config->read();
+        $parkedLinks = collect();
+        foreach ($config['paths'] as $path) {
+            if ($path === $this->sitesPath()) {
+                continue;
+            }
+
+            $parkedLinks = $parkedLinks->merge($this->getSites($path, $certs));
+        }
+
+        return $parkedLinks;
     }
 
     /**
@@ -120,16 +146,26 @@ class Site
      */
     function getCertificates($path)
     {
+        $config = $this->config->read();
+
         return collect($this->files->scandir($path))->filter(function ($value, $key) {
             return ends_with($value, '.crt');
-        })->map(function ($cert) {
+        })->map(function ($cert) use ($config) {
             $certWithoutSuffix = substr($cert, 0, -4);
-            return substr($certWithoutSuffix, 0, strrpos($certWithoutSuffix, '.'));
+            $trimToString = '.';
+
+            // If we have the cert ending in our tld strip that tld specifically
+            // if not then just strip the last segment for  backwards compatibility.
+            if (ends_with($certWithoutSuffix, $config['tld'])) {
+                $trimToString .= $config['tld'];
+            }
+
+            return substr($certWithoutSuffix, 0, strrpos($certWithoutSuffix, $trimToString));
         })->flip();
     }
 
     /**
-     * Get list of links and present them formatted.
+     * @deprecated Use getSites instead which works for both normal and symlinked paths.
      *
      * @param string $path
      * @param \Illuminate\Support\Collection $certs
@@ -137,10 +173,31 @@ class Site
      */
     function getLinks($path, $certs)
     {
+        return $this->getSites($path, $certs);
+    }
+
+    /**
+     * Get list of sites and return them formatted
+     * Will work for symlink and normal site paths
+     *
+     * @param $path
+     * @param $certs
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    function getSites($path, $certs)
+    {
         $config = $this->config->read();
 
         return collect($this->files->scandir($path))->mapWithKeys(function ($site) use ($path) {
-            return [$site => $this->files->readLink($path.'/'.$site)];
+            $sitePath = $path.'/'.$site;
+
+            if ($this->files->isLink($sitePath)) {
+                $realPath = $this->files->readLink($sitePath);
+            } else {
+                $realPath = $this->files->realpath($sitePath);
+            }
+            return [$site => $realPath];
         })->map(function ($path, $site) use ($certs, $config) {
             $secured = $certs->has($site);
             $url = ($secured ? 'https': 'http').'://'.$site.'.'.$config['tld'];
