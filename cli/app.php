@@ -32,7 +32,7 @@ if (file_exists(__DIR__.'/../vendor/autoload.php')) {
  */
 Container::setInstance(new Container);
 
-$version = '4.1.1';
+$version = '4.1.2';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -100,9 +100,7 @@ if (is_dir(VALET_HOME_PATH)) {
     /**
      * Upgrade helper: ensure the tld config exists and the loopback config exists.
      */
-    if (empty(Configuration::read()['tld']) || empty(Configuration::read()['loopback'])) {
-        Configuration::writeBaseConfiguration();
-    }
+    Configuration::ensureBaseConfiguration();
 
     /**
      * Get or set the TLD currently being used by Valet.
