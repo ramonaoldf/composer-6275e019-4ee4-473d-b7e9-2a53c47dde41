@@ -115,10 +115,10 @@ class Nginx
      */
     private function lint()
     {
-        $this->cli->quietly(
+        $this->cli->run(
             'sudo nginx -c '.static::NGINX_CONF.' -t',
             function ($exitCode, $outputMessage) {
-                throw new DomainException("Nginx cannot start, please check your nginx.conf [$exitCode: $outputMessage].");
+                throw new DomainException("Nginx cannot start; please check your nginx.conf [$exitCode: $outputMessage].");
             }
         );
     }
@@ -160,12 +160,14 @@ class Nginx
     }
 
     /**
-     * Prepare Nginx for uninstallation.
+     * Forcefully uninstall Nginx.
      *
      * @return void
      */
     function uninstall()
     {
-        $this->stop();
+        $this->brew->stopService(['nginx', 'nginx-full']);
+        $this->brew->uninstallFormula('nginx nginx-full');
+        $this->cli->quietly('rm -rf /usr/local/etc/nginx /usr/local/var/log/nginx');
     }
 }
