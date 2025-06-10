@@ -38,7 +38,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && ! is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '3.2.2';
+$version = '3.3.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -322,6 +322,13 @@ if (is_dir(VALET_HOME_PATH)) {
     })->descriptions('Get the URL to the current Ngrok tunnel');
 
     /**
+     * Set the ngrok auth token.
+     */
+    $app->command('set-ngrok-token [token]', function (OutputInterface $output, $token = null) {
+        output(Ngrok::setToken($token));
+    })->descriptions('Set the Ngrok auth token');
+
+    /**
      * Start the daemon services.
      */
     $app->command('start [service]', function (OutputInterface $output, $service) {
@@ -563,8 +570,15 @@ You might also want to investigate your global Composer configs. Helpful command
             $site = basename(getcwd());
         }
 
-        if (is_null($phpVersion) && $phpVersion = Site::phpRcVersion($site)) {
+        if (is_null($phpVersion)) {
             info("Found '{$site}/.valetphprc' specifying version: {$phpVersion}");
+            if ($phpVersion = Site::phpRcVersion($site)) {
+                info("Found '{$site}/.valetphprc' specifying version: {$phpVersion}");
+            } else {
+                info("\nPlease provide a version number. E.g.:");
+                info('valet isolate php@8.2');
+                exit;
+            }
         }
 
         PhpFpm::isolateDirectory($site, $phpVersion);
