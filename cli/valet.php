@@ -31,7 +31,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.3.3';
+$version = '2.4.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -45,7 +45,7 @@ if (is_dir(VALET_HOME_PATH)) {
 }
 
 /**
- * Allow Valet to be run more conveniently by allowing the Node proxy to run password-less sudo.
+ * Install Valet and any required services.
  */
 $app->command('install', function () {
     Nginx::stop();
@@ -262,9 +262,10 @@ if (is_dir(VALET_HOME_PATH)) {
      */
     $app->command('on-latest-version', function () use ($version) {
         if (Valet::onLatestVersion($version)) {
-            output('YES');
+            output('Yes');
         } else {
-            output('NO');
+            output(sprintf('Your version of Valet (%s) is not the latest version available.', $version));
+            output('Upgrade instructions can be found in the docs: https://laravel.com/docs/valet#upgrading');
         }
     })->descriptions('Determine if this is the latest version of Valet');
 
@@ -288,7 +289,7 @@ if (is_dir(VALET_HOME_PATH)) {
 
         Nginx::restart();
         info(sprintf('Valet is now using %s.', $newVersion));
-    })->descriptions('Change the version of php used by valet', [
+    })->descriptions('Change the version of PHP used by valet', [
         'phpVersion' => 'The PHP version you want to use, e.g php@7.2',
     ]);
 
@@ -316,7 +317,7 @@ if (is_dir(VALET_HOME_PATH)) {
                 'In order to tail a log, pass the relevant log key (e.g. "nginx")',
                 'along with any optional tail parameters (e.g. "-f" for follow).',
                 null,
-                'For example: "valet logs nginx -f --lines=3"',
+                'For example: "valet log nginx -f --lines=3"',
                 null,
                 'Here are the logs you might be interested in.',
                 null,
