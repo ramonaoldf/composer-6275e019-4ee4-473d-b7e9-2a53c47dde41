@@ -33,7 +33,7 @@ class DnsMasq
      *
      * @return void
      */
-    function install($domain = 'dev')
+    function install($domain = 'test')
     {
         $this->brew->ensureInstalled('dnsmasq');
 
@@ -61,7 +61,7 @@ class DnsMasq
 
         $this->appendCustomConfigImport($customConfigPath);
 
-        $this->files->putAsUser($customConfigPath, 'address=/.'.$domain.'/127.0.0.1'.PHP_EOL);
+        $this->files->putAsUser($customConfigPath, 'address=/.'.$domain.'/127.0.0.1'.PHP_EOL.'listen-address=127.0.0.1'.PHP_EOL);
     }
 
     /**
@@ -107,7 +107,7 @@ class DnsMasq
     }
 
     /**
-     * Create the resolver file to point the "dev" domain to 127.0.0.1.
+     * Create the resolver file to point the configured domain to 127.0.0.1.
      *
      * @param  string  $domain
      * @return void
