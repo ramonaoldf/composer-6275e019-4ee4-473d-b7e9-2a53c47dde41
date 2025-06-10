@@ -14,21 +14,21 @@ use Silly\Application;
 /**
  * Create the application.
  */
-$app = new Application('Laravel Malt', 'v0.1.3');
+$app = new Application('Laravel Valet', 'v0.1.5');
 
 /**
- * Allow Malt to be run more conveniently by allowing the Node proxy to run password-less sudo.
+ * Allow Valet to be run more conveniently by allowing the Node proxy to run password-less sudo.
  */
 $app->command('install', function ($output) {
     should_be_sudo();
 
-    Malt\LaunchDaemon::install();
+    Valet\LaunchDaemon::install();
 
-    Malt\Configuration::install();
+    Valet\Configuration::install();
 
-    Malt\DnsMasq::install($output);
+    Valet\DnsMasq::install($output);
 
-    $output->writeln(PHP_EOL.'<info>Malt installed successfully!</info>');
+    $output->writeln(PHP_EOL.'<info>Valet installed successfully!</info>');
 });
 
 /**
@@ -37,9 +37,9 @@ $app->command('install', function ($output) {
 $app->command('serve', function ($output) {
     should_be_sudo();
 
-    Malt\Configuration::addPath(getcwd());
+    Valet\Configuration::addPath(getcwd());
 
-    Malt\LaunchDaemon::restart();
+    Valet\LaunchDaemon::restart();
 
     $output->writeln('<info>This directory has been added to your serve paths!</info>');
 });
@@ -48,7 +48,7 @@ $app->command('serve', function ($output) {
  * Add the current working directory to the paths configuration.
  */
 $app->command('logs', function ($output) {
-    $paths = Malt\Configuration::read()['paths'];
+    $paths = Valet\Configuration::read()['paths'];
 
     $files = [];
 
@@ -73,9 +73,9 @@ $app->command('logs', function ($output) {
 $app->command('restart', function ($output) {
     should_be_sudo();
 
-    Malt\LaunchDaemon::restart();
+    Valet\LaunchDaemon::restart();
 
-    $output->writeln('<info>Malt services have been restarted.</info>');
+    $output->writeln('<info>Valet services have been restarted.</info>');
 });
 
 /**
@@ -84,9 +84,9 @@ $app->command('restart', function ($output) {
 $app->command('stop', function ($output) {
     should_be_sudo();
 
-    Malt\LaunchDaemon::stop();
+    Valet\LaunchDaemon::stop();
 
-    $output->writeln('<info>Malt services have been stopped.</info>');
+    $output->writeln('<info>Valet services have been stopped.</info>');
 });
 
 /**
@@ -95,9 +95,9 @@ $app->command('stop', function ($output) {
 $app->command('uninstall', function ($output) {
     should_be_sudo();
 
-    Malt\LaunchDaemon::uninstall();
+    Valet\LaunchDaemon::uninstall();
 
-    $output->writeln('<info>Malt has been uninstalled.</info>');
+    $output->writeln('<info>Valet has been uninstalled.</info>');
 });
 
 /**
