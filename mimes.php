@@ -618,6 +618,7 @@ return [
     "pfm" => "application/x-font-type1",
     "afm" => "application/x-font-type1",
     "woff" => "application/font-woff",
+    "woff2" => "application/font-woff2",
     "arc" => "application/x-freearc",
     "spl" => "application/x-futuresplash",
     "gca" => "application/x-gca-compressed",
@@ -983,4 +984,6 @@ return [
     "smv" => "video/x-smv",
     "ice" => "x-conference/x-cooltalk",
     "map" => "application/json",
+    "hbs" => "text/html",
+    "mustache" => "text/html",
 ];
