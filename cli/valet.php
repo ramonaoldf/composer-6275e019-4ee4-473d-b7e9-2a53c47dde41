@@ -32,7 +32,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.13.16';
+$version = '2.13.17';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -372,7 +372,7 @@ NOTE: Composer may have other dependencies for other global apps you have instal
 Thus, you may need to delete things from your <info>~/.composer/composer.json</info> file before running <info>composer global update</info> successfully.
 Then to finish removing any Composer fragments of Valet:
 Run <info>composer global remove laravel/valet</info>
-and then <info>rm /usr/local/bin/valet</info> to remove the Valet bin link if it still exists.
+and then <info>rm ".BREW_PREFIX."/bin/valet</info> to remove the Valet bin link if it still exists.
 Optional:
 - <info>brew list --formula</info> will show any other Homebrew services installed, in case you want to make changes to those as well.
 - <info>brew doctor</info> can indicate if there might be any broken things left behind.
@@ -436,7 +436,7 @@ You might also want to investigate your global Composer configs. Helpful command
             output('Yes');
         } else {
             output(sprintf('Your version of Valet (%s) is not the latest version available.', $version));
-            output('Upgrade instructions can be found in the docs: https://laravel.com/docs/valet#upgrading');
+            output('Upgrade instructions can be found in the docs: https://laravel.com/docs/valet#upgrading-valet');
         }
     })->descriptions('Determine if this is the latest version of Valet');
 
