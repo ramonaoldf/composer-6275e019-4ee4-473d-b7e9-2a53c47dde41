@@ -18,7 +18,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$version = '1.1.8';
+$version = '1.1.9';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -50,24 +50,25 @@ $app->command('install', function () {
 })->descriptions('Install the Valet services');
 
 /**
- * Change the domain currently being used by Valet.
+ * Get or set the domain currently being used by Valet.
  */
-$app->command('domain domain', function ($domain) {
+$app->command('domain [domain]', function ($domain = null) {
+    if ($domain === null) {
+        return info(Configuration::read()['domain']);
+    }
+
     DnsMasq::updateDomain(
-        Configuration::read()['domain'], $domain = trim($domain, '.')
+        $oldDomain = Configuration::read()['domain'], $domain = trim($domain, '.')
     );
 
     Configuration::updateKey('domain', $domain);
 
-    info('Your Valet domain has been updated to ['.$domain.'].');
-})->descriptions('Set the domain used for Valet sites');
+    Site::resecureForNewDomain($oldDomain, $domain);
+    PhpFpm::restart();
+    Caddy::restart();
 
-/**
- * Get the domain currently being used by Valet.
- */
-$app->command('current-domain', function () {
-    info(Configuration::read()['domain']);
-})->descriptions('Get the current Valet domain');
+    info('Your Valet domain has been updated to ['.$domain.'].');
+})->descriptions('Get or set the domain used for Valet sites');
 
 /**
  * Add the current working directory to the paths configuration.
@@ -113,6 +114,33 @@ $app->command('unlink [name]', function ($name) {
 })->descriptions('Remove the specified Valet link');
 
 /**
+ * Secure the given domain with a trusted TLS certificate.
+ */
+$app->command('secure [domain]', function ($domain = null) {
+    $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
+
+    Site::secure($url);
+
+    PhpFpm::restart();
+
+    Caddy::restart();
+
+    info('The ['.$url.'] site has been secured with a fresh TLS certificate.');
+});
+
+$app->command('unsecure [domain]', function ($domain = null) {
+    $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
+
+    Site::unsecure($url);
+
+    PhpFpm::restart();
+
+    Caddy::restart();
+
+    info('The ['.$url.'] site will now serve traffic over HTTP.');
+});
+
+/**
  * Determine which Valet driver the current directory is using.
  */
 $app->command('which', function () {
@@ -156,6 +184,15 @@ $app->command('paths', function () {
         info('No paths have been registered.');
     }
 })->descriptions('Get all of the paths registered with Valet');
+
+/**
+ * Open the current directory in the browser.
+ */
+ $app->command('open', function () {
+     $url = "http://".Site::host(getcwd()).'.'.Configuration::read()['domain'].'/';
+
+     passthru("open ".escapeshellarg($url));
+ })->descriptions('Open the site for the current directory in your browser');
 
 /**
  * Echo the currently tunneled URL.
