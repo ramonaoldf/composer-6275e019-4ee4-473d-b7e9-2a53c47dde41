@@ -18,7 +18,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$version = '1.1.11';
+$version = '1.1.12';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -153,7 +153,7 @@ $app->command('which', function () {
     } else {
         warning('Valet could not determine which driver to use for this site.');
     }
-})->descriptions('Determine which Valet driver serves the current workign directory');
+})->descriptions('Determine which Valet driver serves the current working directory');
 
 /**
  * Stream all of the logs for all sites.
