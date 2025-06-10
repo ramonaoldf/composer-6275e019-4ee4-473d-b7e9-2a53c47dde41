@@ -51,6 +51,7 @@ abstract class ValetDriver
         $drivers[] = 'CraftValetDriver';
         $drivers[] = 'StatamicValetDriver';
         $drivers[] = 'StatamicV1ValetDriver';
+        $drivers[] = 'CakeValetDriver';
         $drivers[] = 'SculpinValetDriver';
         $drivers[] = 'JigsawValetDriver';
         $drivers[] = 'KirbyValetDriver';
@@ -124,5 +125,16 @@ abstract class ValetDriver
         header('Content-Type: '. $mime);
 
         readfile($staticFilePath);
+    }
+
+    /**
+     * Determine if the path is a file and not a directory.
+     *
+     * @param  string  $path
+     * @return bool
+     */
+    protected function isActualFile($path)
+    {
+        return ! is_dir($path) && file_exists($path);
     }
 }

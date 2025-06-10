@@ -4,15 +4,16 @@
 /**
  * Load correct autoloader depending on install location.
  */
-if (file_exists(__DIR__.'/vendor/autoload.php')) {
-    require __DIR__.'/vendor/autoload.php';
+if (file_exists(__DIR__.'/../vendor/autoload.php')) {
+    require __DIR__.'/../vendor/autoload.php';
 } else {
-    require __DIR__.'/../../autoload.php';
+    require __DIR__.'/../../../autoload.php';
 }
 
 use Silly\Application;
 use Valet\Facades\Brew;
 use Valet\Facades\Site;
+use Valet\Facades\Valet;
 use Valet\Facades\Caddy;
 use Valet\Facades\Ngrok;
 use Valet\Facades\PhpFpm;
@@ -27,7 +28,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$app = new Application('Laravel Valet', 'v1.1.3');
+$app = new Application('Laravel Valet', 'v1.1.4');
 
 /**
  * Prune missing directories and symbolic links on every command.
@@ -45,14 +46,13 @@ $app->command('install', function () {
     Caddy::stop();
 
     Configuration::install();
-
     Caddy::install();
-
     PhpFpm::install();
-
     DnsMasq::install();
-
     Caddy::restart();
+    Valet::symlinkToUsersBin();
+    Brew::createSudoersEntry();
+    Valet::createSudoersEntry();
 
     output(PHP_EOL.'<info>Valet installed successfully!</info>');
 });
