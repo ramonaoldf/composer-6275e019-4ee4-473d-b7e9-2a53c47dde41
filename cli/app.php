@@ -33,7 +33,7 @@ if (file_exists(__DIR__.'/../vendor/autoload.php')) {
  */
 Container::setInstance(new Container);
 
-$version = '4.3.0';
+$version = '4.4.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -117,7 +117,7 @@ if (is_dir(VALET_HOME_PATH)) {
             false
         );
 
-        if (false === $helper->ask($input, $output, $question)) {
+        if ($helper->ask($input, $output, $question) === false) {
             return warning('No new Valet tld was set.');
         }
 
@@ -197,12 +197,12 @@ if (is_dir(VALET_HOME_PATH)) {
         info('A ['.$name.'] symbolic link has been created in ['.$linkPath.'].');
 
         if ($secure) {
-            $this->runCommand('secure');
+            $this->runCommand('secure '.$name);
         }
 
         if ($isolate) {
-            if (Site::phpRcVersion($name)) {
-                $this->runCommand('isolate');
+            if (Site::phpRcVersion($name, getcwd())) {
+                $this->runCommand('isolate --site='.$name);
             } else {
                 warning('Valet could not determine which PHP version to use for this site.');
             }
@@ -409,7 +409,7 @@ if (is_dir(VALET_HOME_PATH)) {
             $helper = $this->getHelperSet()->get('question');
             $question = new ConfirmationQuestion('Would you like to install Expose now? [y/N] ', false);
 
-            if (false === $helper->ask($input, $output, $question)) {
+            if ($helper->ask($input, $output, $question) === false) {
                 info('Proceeding without installing Expose.');
 
                 return;
@@ -425,7 +425,7 @@ if (is_dir(VALET_HOME_PATH)) {
             $helper = $this->getHelperSet()->get('question');
             $question = new ConfirmationQuestion('Would you like to install ngrok via Homebrew now? [y/N] ', false);
 
-            if (false === $helper->ask($input, $output, $question)) {
+            if ($helper->ask($input, $output, $question) === false) {
                 info('Proceeding without installing ngrok.');
 
                 return;
@@ -540,7 +540,7 @@ if (is_dir(VALET_HOME_PATH)) {
             $helper = $this->getHelperSet()->get('question');
             $question = new ConfirmationQuestion('Are you sure you want to proceed? [y/N]', false);
 
-            if (false === $helper->ask($input, $output, $question)) {
+            if ($helper->ask($input, $output, $question) === false) {
                 return warning('Uninstall aborted.');
             }
 
