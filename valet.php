@@ -26,7 +26,7 @@ use Illuminate\Container\Container;
  */
 Container::setInstance(new Container);
 
-$app = new Application('Laravel Valet', 'v1.1.1');
+$app = new Application('Laravel Valet', 'v1.1.2');
 
 /**
  * Prune missing directories and symbolic links on every command.
@@ -180,7 +180,7 @@ $app->command('fetch-share-url', function () {
         if (isset($body->tunnels) && count($body->tunnels) > 0) {
             foreach ($body->tunnels as $tunnel) {
                 if ($tunnel->proto == 'http') {
-                    return $output->write($tunnel->public_url);
+                    return output($tunnel->public_url);
                 }
             }
         }
