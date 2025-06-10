@@ -18,7 +18,7 @@ class Ngrok
     /**
      * Get the current tunnel URL from the Ngrok API.
      */
-    public function currentTunnelUrl(?string $domain = null): string
+    public function currentTunnelUrl(string $domain): string
     {
         // wait a second for ngrok to start before attempting to find available tunnels
         sleep(1);
@@ -26,7 +26,7 @@ class Ngrok
         foreach ($this->tunnelsEndpoints as $endpoint) {
             try {
                 $response = retry(20, function () use ($endpoint, $domain) {
-                    $body = json_decode((new Client())->get($endpoint)->getBody());
+                    $body = json_decode((new Client)->get($endpoint)->getBody());
 
                     if (isset($body->tunnels) && count($body->tunnels) > 0) {
                         if ($tunnelUrl = $this->findHttpTunnelUrl($body->tunnels, $domain)) {
