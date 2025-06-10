@@ -43,9 +43,9 @@ class CraftValetDriver extends ValetDriver
     public function frontControllerPath($sitePath, $siteName, $uri)
     {
         $_SERVER['SCRIPT_FILENAME'] = $sitePath.'/public/index.php';
-
+        $_SERVER['SERVER_NAME'] = $_SERVER['HTTP_HOST'];
         $_SERVER['SCRIPT_NAME'] = '/index.php';
 
-        return $sitePath.'/craft/app/index.php';
+        return $sitePath.'/public/index.php';
     }
 }
