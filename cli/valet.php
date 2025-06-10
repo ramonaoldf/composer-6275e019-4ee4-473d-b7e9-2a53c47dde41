@@ -31,7 +31,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.3.2';
+$version = '2.3.3';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -308,7 +308,8 @@ if (is_dir(VALET_HOME_PATH)) {
             $configLogs = [];
         }
 
-        $logs = collect(array_merge($defaultLogs, $configLogs))->sortKeys();
+        $logs = array_merge($defaultLogs, $configLogs);
+        ksort($logs);
 
         if (! $key) {
             info(implode(PHP_EOL, [
