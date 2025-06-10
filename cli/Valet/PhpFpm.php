@@ -2,9 +2,7 @@
 
 namespace Valet;
 
-use Exception;
 use DomainException;
-use Symfony\Component\Process\Process;
 
 class PhpFpm
 {
@@ -119,5 +117,57 @@ class PhpFpm
         return $versionNormalized === '5.6'
             ? '/usr/local/etc/php/5.6/php-fpm.conf'
             : "/usr/local/etc/php/${versionNormalized}/php-fpm.d/www.conf";
+    }
+
+    /**
+     * Only stop running php services
+     */
+    function stopRunning()
+    {
+        $this->brew->stopService(
+            $this->brew->getRunningServices()
+                ->filter(function ($service) {
+                    return substr($service, 0, 3) === 'php';
+                })
+                ->all()
+        );
+    }
+
+    /**
+     * Use a specific version of php
+     *
+     * @param $version
+     * @return string
+     */
+    function useVersion($version)
+    {
+        // If passed php7.2 or php72 formats, convert to php@7.2 format:
+        $version = preg_replace('/(php)([0-9+])(?:.)?([0-9+])/i', '$1@$2.$3', $version);
+
+        if (!$this->brew->supportedPhpVersions()->contains($version)) {
+            throw new DomainException(
+                sprintf(
+                    'Valet doesn\'t support PHP version: %s (try something like \'php7.2\' instead)',
+                    $version
+                )
+            );
+        }
+
+        // Install the relevant formula if not already installed
+        $this->brew->ensureInstalled($version);
+
+        // Unlink the current php if there is one
+        if ($this->brew->hasLinkedPhp()) {
+            $currentVersion = $this->brew->getLinkedPhpFormula();
+            info(sprintf('Unlinking current version: %s', $currentVersion));
+            $this->brew->unlink($currentVersion);
+        }
+
+        info(sprintf('Linking new version: %s', $version));
+        $this->brew->link($version, true);
+
+        $this->install();
+
+        return $version;
     }
 }
