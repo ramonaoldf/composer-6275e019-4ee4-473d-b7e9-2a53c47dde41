@@ -7,8 +7,21 @@ use DomainException;
 
 class Brew
 {
-    const SUPPORTED_PHP_VERSIONS = ['php', 'php@7.2', 'php@7.1', 'php@7.0', 'php@5.6', 'php72', 'php71', 'php70', 'php56'];
-    const LATEST_PHP_VERSION = 'php@7.2';
+    const SUPPORTED_PHP_VERSIONS = [
+        'php',
+        'php@7.3',
+        'php@7.2',
+        'php@7.1',
+        'php@7.0',
+        'php@5.6',
+        'php73',
+        'php72',
+        'php71',
+        'php70',
+        'php56'
+    ];
+
+    const LATEST_PHP_VERSION = 'php@7.3';
 
     var $cli, $files;
 
@@ -130,7 +143,7 @@ class Brew
         $formulas = is_array($formulas) ? $formulas : func_get_args();
 
         foreach ($formulas as $formula) {
-            $this->cli->passthru('sudo -u '.user().' brew tap '.$formula);
+            $this->cli->passthru('sudo -u "'.user().'" brew tap '.$formula);
         }
     }
 
