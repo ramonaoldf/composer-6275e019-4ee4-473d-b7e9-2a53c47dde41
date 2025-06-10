@@ -9,7 +9,7 @@ class Configuration
     /**
      * Create a new Valet configuration class instance.
      *
-     * @param Filesystem $filesystem
+     * @param Filesystem $files
      */
     function __construct(Filesystem $files)
     {
@@ -41,6 +41,13 @@ class Configuration
      */
     function createConfigurationDirectory()
     {
+        $oldPath = posix_getpwuid(fileowner(__FILE__))['dir'].'/.valet';
+
+        if ($this->files->isDir($oldPath)) {
+            rename($oldPath, VALET_HOME_PATH);
+            $this->prependPath(VALET_HOME_PATH.'/Sites');
+        }
+
         $this->files->ensureDirExists(VALET_HOME_PATH, user());
     }
 
@@ -111,8 +118,19 @@ class Configuration
     function writeBaseConfiguration()
     {
         if (! $this->files->exists($this->path())) {
-            $this->write(['domain' => 'test', 'paths' => []]);
+            $this->write(['tld' => 'test', 'paths' => []]);
         }
+
+        /**
+         * Migrate old configurations from 'domain' to 'tld'
+         */
+        $config = $this->read();
+
+        if (isset($config['tld'])) {
+            return;
+        }
+
+        $this->updateKey('tld', !empty($config['domain']) ? $config['domain'] : 'test');
     }
 
     /**
