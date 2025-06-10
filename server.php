@@ -61,13 +61,7 @@ if (is_null($valetSitePath)) {
  */
 $valetDriver = null;
 
-require_once __DIR__.'/drivers/ValetDriver.php';
-require_once __DIR__.'/drivers/StatamicValetDriver.php';
-require_once __DIR__.'/drivers/LaravelValetDriver.php';
-require_once __DIR__.'/drivers/StaticValetDriver.php';
-require_once __DIR__.'/drivers/JigsawValetDriver.php';
-require_once __DIR__.'/drivers/WordPressValetDriver.php';
-require_once __DIR__.'/drivers/CraftValetDriver.php';
+require __DIR__.'/drivers/require.php';
 
 $valetDriver = ValetDriver::assign($valetSitePath, $siteName, $uri);
 
@@ -80,7 +74,15 @@ if (! $valetDriver) {
  */
 $uri = $valetDriver->mutateUri($uri);
 
-if ($uri !== '/' && $staticFilePath = $valetDriver->isStaticFile($valetSitePath, $siteName, $uri)) {
+$uriPathInfo = pathinfo($uri);
+
+$isPhpFile = false;
+
+if (isset($uriPathInfo['extension']) && $uriPathInfo['extension'] === 'php') {
+    $isPhpFile = true;
+}
+
+if ($uri !== '/' && ! $isPhpFile && $staticFilePath = $valetDriver->isStaticFile($valetSitePath, $siteName, $uri)) {
     return $valetDriver->serveStaticFile($staticFilePath, $valetSitePath, $siteName, $uri);
 }
 

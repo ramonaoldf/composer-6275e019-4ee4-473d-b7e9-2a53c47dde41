@@ -8,7 +8,7 @@ abstract class ValetDriver
      * @param  string  $sitePath
      * @param  string  $siteName
      * @param  string  $uri
-     * @return void
+     * @return bool
      */
     abstract public function serves($sitePath, $siteName, $uri);
 
@@ -45,10 +45,10 @@ abstract class ValetDriver
         $drivers = static::driversIn(VALET_HOME_PATH.'/Drivers');
 
         $drivers[] = 'LaravelValetDriver';
-        $drivers[] = 'StatamicValetDriver';
-        $drivers[] = 'JigsawValetDriver';
         $drivers[] = 'WordPressValetDriver';
         $drivers[] = 'CraftValetDriver';
+        $drivers[] = 'StatamicValetDriver';
+        $drivers[] = 'JigsawValetDriver';
         $drivers[] = 'StaticValetDriver';
 
         foreach ($drivers as $driver) {
