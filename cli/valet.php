@@ -12,13 +12,17 @@ if (file_exists(__DIR__.'/../vendor/autoload.php')) {
 
 use Silly\Application;
 use Illuminate\Container\Container;
+use function Valet\info;
+use function Valet\output;
+use function Valet\table;
+use function Valet\warning;
 
 /**
  * Create the application.
  */
 Container::setInstance(new Container);
 
-$version = '2.0.12';
+$version = '2.1.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -40,7 +44,7 @@ $app->command('install', function () {
     Configuration::install();
     Nginx::install();
     PhpFpm::install();
-    DnsMasq::install(Configuration::read()['domain']);
+    DnsMasq::install(Configuration::read()['tld']);
     Nginx::restart();
     Valet::symlinkToUsersBin();
 
@@ -52,25 +56,29 @@ $app->command('install', function () {
  */
 if (is_dir(VALET_HOME_PATH)) {
     /**
-     * Get or set the domain currently being used by Valet.
+     * Get or set the TLD currently being used by Valet.
      */
-    $app->command('domain [domain]', function ($domain = null) {
-        if ($domain === null) {
-            return info(Configuration::read()['domain']);
+    $app->command('tld [tld]', function ($tld = null) {
+        if (empty(Configuration::read()['tld'])) {
+            Configuration::writeBaseConfiguration();
         }
 
-        DnsMasq::updateDomain(
-            $oldDomain = Configuration::read()['domain'], $domain = trim($domain, '.')
+        if ($tld === null) {
+            return info(Configuration::read()['tld']);
+        }
+
+        DnsMasq::updateTld(
+            $oldTld = Configuration::read()['tld'], $tld = trim($tld, '.')
         );
 
-        Configuration::updateKey('domain', $domain);
+        Configuration::updateKey('tld', $tld);
 
-        Site::resecureForNewDomain($oldDomain, $domain);
+        Site::resecureForNewTld($oldTld, $tld);
         PhpFpm::restart();
         Nginx::restart();
 
-        info('Your Valet domain has been updated to ['.$domain.'].');
-    })->descriptions('Get or set the domain used for Valet sites');
+        info('Your Valet TLD has been updated to ['.$tld.'].');
+    }, ['domain'])->descriptions('Get or set the TLD used for Valet sites.');
 
     /**
      * Add the current working directory to the paths configuration.
@@ -116,20 +124,16 @@ if (is_dir(VALET_HOME_PATH)) {
      * Unlink a link from the Valet links directory.
      */
     $app->command('unlink [name]', function ($name) {
-        Site::unlink($name = $name ?: basename(getcwd()));
-
-        info('The ['.$name.'] symbolic link has been removed.');
+        info('The ['.Site::unlink($name).'] symbolic link has been removed.');
     })->descriptions('Remove the specified Valet link');
 
     /**
      * Secure the given domain with a trusted TLS certificate.
      */
     $app->command('secure [domain]', function ($domain = null) {
-        $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
+        $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['tld'];
 
         Site::secure($url);
-
-        PhpFpm::restart();
 
         Nginx::restart();
 
@@ -140,11 +144,9 @@ if (is_dir(VALET_HOME_PATH)) {
      * Stop serving the given domain over HTTPS and remove the trusted TLS certificate.
      */
     $app->command('unsecure [domain]', function ($domain = null) {
-        $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
+        $url = ($domain ?: Site::host(getcwd())).'.'.Configuration::read()['tld'];
 
         Site::unsecure($url);
-
-        PhpFpm::restart();
 
         Nginx::restart();
 
@@ -183,7 +185,7 @@ if (is_dir(VALET_HOME_PATH)) {
      * Open the current or given directory in the browser.
      */
     $app->command('open [domain]', function ($domain = null) {
-        $url = "http://".($domain ?: Site::host(getcwd())).'.'.Configuration::read()['domain'];
+        $url = "http://".($domain ?: Site::host(getcwd())).'.'.Configuration::read()['tld'];
         CommandLine::runAsUser("open ".escapeshellarg($url));
     })->descriptions('Open the site for the current (or specified) directory in your browser');
 
