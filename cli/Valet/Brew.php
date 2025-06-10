@@ -40,9 +40,19 @@ class Brew
      */
     function hasInstalledPhp()
     {
-        return $this->installed('php71')
-            || $this->installed('php70')
-            || $this->installed('php56');
+        return $this->supportedPhpVersions()->contains(function ($version) {
+            return $this->installed($version);
+        });
+    }
+
+    /**
+     * Get a list of supported PHP versions
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    function supportedPhpVersions()
+    {
+        return collect(['php72', 'php71', 'php70', 'php56']);
     }
 
     /**
@@ -91,6 +101,8 @@ class Brew
      */
     function installOrFail($formula, $options = [], $taps = [])
     {
+        info("Installing {$formula}...");
+
         if (count($taps) > 0) {
             $this->tap($taps);
         }
@@ -129,8 +141,12 @@ class Brew
         $services = is_array($services) ? $services : func_get_args();
 
         foreach ($services as $service) {
-            $this->cli->quietly('sudo brew services stop '.$service);
-            $this->cli->quietly('sudo brew services start '.$service);
+            if ($this->installed($service)) {
+                info("Restarting {$service}...");
+
+                $this->cli->quietly('sudo brew services stop '.$service);
+                $this->cli->quietly('sudo brew services start '.$service);
+            }
         }
     }
 
@@ -144,7 +160,11 @@ class Brew
         $services = is_array($services) ? $services : func_get_args();
 
         foreach ($services as $service) {
-            $this->cli->quietly('sudo brew services stop '.$service);
+            if ($this->installed($service)) {
+                info("Stopping {$service}...");
+
+                $this->cli->quietly('sudo brew services stop '.$service);
+            }
         }
     }
 
@@ -161,15 +181,11 @@ class Brew
 
         $resolvedPath = $this->files->readLink('/usr/local/bin/php');
 
-        if (strpos($resolvedPath, 'php71') !== false) {
-            return 'php71';
-        } elseif (strpos($resolvedPath, 'php70') !== false) {
-            return 'php70';
-        } elseif (strpos($resolvedPath, 'php56') !== false) {
-            return 'php56';
-        } else {
+        return $this->supportedPhpVersions()->first(function ($version) use ($resolvedPath) {
+            return strpos($resolvedPath, $version) !== false;
+        }, function () {
             throw new DomainException("Unable to determine linked PHP.");
-        }
+        });
     }
 
     /**
