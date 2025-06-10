@@ -1,4 +1,4 @@
-<p align="center"><img src="https://laravel.com/assets/img/components/logo-valet.svg"></p>
+<p align="center"><img src="/art/logo.svg"></p>
 
 <p align="center">
 <a href="https://github.com/laravel/valet/actions?query=workflow%3ATests"><img src="https://github.com/laravel/valet/workflows/Tests/badge.svg?branch=master" alt="Build Status"></a>
@@ -18,6 +18,18 @@ In other words, a blazing fast Laravel development environment that uses roughly
 ## Official Documentation
 
 Documentation for Valet can be found on the [Laravel website](https://laravel.com/docs/valet).
+
+## Contributing
+
+Thank you for considering contributing to Valet! You can read the contribution guide [here](.github/CONTRIBUTING.md).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+Please review [our security policy](https://github.com/laravel/valet/security/policy) on how to report security vulnerabilities.
 
 ## License
 
