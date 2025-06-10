@@ -32,7 +32,7 @@ if (is_dir(VALET_LEGACY_HOME_PATH) && !is_dir(VALET_HOME_PATH)) {
  */
 Container::setInstance(new Container);
 
-$version = '2.7.1';
+$version = '2.8.0';
 
 $app = new Application('Laravel Valet', $version);
 
@@ -234,38 +234,80 @@ if (is_dir(VALET_HOME_PATH)) {
     /**
      * Start the daemon services.
      */
-    $app->command('start', function () {
-        DnsMasq::restart();
+    $app->command('start [service]', function ($service) {
+        switch ($service) {
+            case '':
+                DnsMasq::restart();
+                PhpFpm::restart();
+                Nginx::restart();
 
-        PhpFpm::restart();
+                return info('Valet services have been started.');
+            case 'dnsmasq':
+                DnsMasq::restart();
 
-        Nginx::restart();
+                return info('dnsmasq has been started.');
+            case 'nginx':
+                Nginx::restart();
 
-        info('Valet services have been started.');
+                return info('Nginx has been started.');
+            case 'php':
+                PhpFpm::restart();
+
+                return info('PHP has been started.');
+        }
+
+        return warning(sprintf('Invalid valet service name [%s]', $service));
     })->descriptions('Start the Valet services');
 
     /**
      * Restart the daemon services.
      */
-    $app->command('restart', function () {
-        DnsMasq::restart();
+    $app->command('restart [service]', function ($service) {
+        switch ($service) {
+            case '':
+                DnsMasq::restart();
+                PhpFpm::restart();
+                Nginx::restart();
 
-        PhpFpm::restart();
+                return info('Valet services have been restarted.');
+            case 'dnsmasq':
+                DnsMasq::restart();
 
-        Nginx::restart();
+                return info('dnsmasq has been restarted.');
+            case 'nginx':
+                Nginx::restart();
 
-        info('Valet services have been restarted.');
+                return info('Nginx has been restarted.');
+            case 'php':
+                PhpFpm::restart();
+
+                return info('PHP has been restarted.');
+        }
+
+        return warning(sprintf('Invalid valet service name [%s]', $service));
     })->descriptions('Restart the Valet services');
 
     /**
      * Stop the daemon services.
      */
-    $app->command('stop', function () {
-        PhpFpm::stopRunning();
+    $app->command('stop [service]', function ($service) {
+        switch ($service) {
+            case '':
+                PhpFpm::stopRunning();
+                Nginx::stop();
 
-        Nginx::stop();
+                return info('Valet services have been stopped.');
+            case 'nginx':
+                Nginx::stop();
 
-        info('Valet services have been stopped.');
+                return info('Nginx has been stopped.');
+            case 'php':
+                PhpFpm::stopRunning();
+
+                return info('PHP has been stopped.');
+        }
+
+        return warning(sprintf('Invalid valet service name [%s]', $service));
     })->descriptions('Stop the Valet services');
 
     /**
@@ -373,26 +415,36 @@ You might also want to investigate your global Composer configs. Helpful command
     /**
      * Install the sudoers.d entries so password is no longer required.
      */
-    $app->command('trust', function () {
+    $app->command('trust [--off]', function ($off) {
+        if ($off) {
+            Brew::removeSudoersEntry();
+            Valet::removeSudoersEntry();
+
+            return info('Sudoers entries have been removed for Brew and Valet.');
+        }
+
         Brew::createSudoersEntry();
         Valet::createSudoersEntry();
 
         info('Sudoers entries have been added for Brew and Valet.');
-    })->descriptions('Add sudoers files for Brew and Valet to make Valet commands run without passwords');
+    })->descriptions('Add sudoers files for Brew and Valet to make Valet commands run without passwords', [
+        '--off' => 'Remove the sudoers files so normal sudo password prompts are required.'
+    ]);
 
     /**
      * Allow the user to change the version of php valet uses
      */
     $app->command('use phpVersion', function ($phpVersion) {
-        PhpFpm::stopRunning();
+        PhpFpm::validateRequestedVersion($phpVersion);
 
+        PhpFpm::stopRunning();
         $newVersion = PhpFpm::useVersion($phpVersion);
 
         Nginx::restart();
-        info(sprintf('Valet is now using %s.', $newVersion));
+        info(sprintf('Valet is now using %s.', $newVersion) . PHP_EOL);
         info('Note that you might need to run <comment>composer global update</comment> if your PHP version change affects the dependencies of global packages required by Composer.');
     })->descriptions('Change the version of PHP used by valet', [
-        'phpVersion' => 'The PHP version you want to use, e.g php@7.2',
+        'phpVersion' => 'The PHP version you want to use, e.g php@7.3',
     ]);
 
     /**
