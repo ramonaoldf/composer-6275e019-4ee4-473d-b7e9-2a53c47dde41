@@ -16,7 +16,7 @@ use Silly\Application;
 /**
  * Create the application.
  */
-$app = new Application('Laravel Valet', 'v1.0.10');
+$app = new Application('Laravel Valet', 'v1.0.11');
 
 /**
  * Prune missing directories and symbolic links on every command.
@@ -41,6 +41,28 @@ $app->command('install', function ($output) {
     Valet\LaunchDaemon::restart();
 
     $output->writeln(PHP_EOL.'<info>Valet installed successfully!</info>');
+});
+
+/**
+ * Change the domain currently being used by Valet.
+ */
+$app->command('domain domain', function ($domain, $output) {
+    should_be_sudo();
+
+    $domain = trim($domain, '.');
+
+    Valet\DnsMasq::updateDomain(Valet\Configuration::read()['domain'], $domain);
+
+    Valet\Configuration::updateKey('domain', $domain);
+
+    $output->writeln('<info>Your Valet domain has been updated to ['.$domain.'].</info>');
+});
+
+/**
+ * Get the domain currently being used by Valet.
+ */
+$app->command('current-domain', function ($output) {
+    $output->writeln(Valet\Configuration::read()['domain']);
 });
 
 /**
